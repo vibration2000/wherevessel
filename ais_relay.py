@@ -17,14 +17,12 @@ if sys.platform == "win32":
 from websockets.asyncio.client import connect
 
 ROOT = Path(__file__).resolve().parent
+if sys.stdout is None:
+    sys.stdout = open(ROOT / "ais_relay.log", "a", encoding="utf-8", buffering=1)
+    sys.stderr = sys.stdout
 
 
-def load_key():
-    if os.environ.get("AISSTREAM_API_KEY"):
-        return os.environ["AISSTREAM_API_KEY"]
-    protected = ROOT / ".aisstream-key.bin"
-    if sys.platform != "win32" or not protected.exists():
-        raise RuntimeError("Set AISSTREAM_API_KEY or save the Windows-protected key first")
+def decrypt_windows(protected):
     import ctypes
     from ctypes import wintypes
     class Blob(ctypes.Structure):
@@ -40,21 +38,40 @@ def load_key():
         ctypes.windll.kernel32.LocalFree(output.data)
 
 
-def send_batch(key, records):
+def load_settings():
+    config = ROOT / "relay-config.bin"
+    if config.exists():
+        return json.loads(decrypt_windows(config))
+    if os.environ.get("AISSTREAM_API_KEY"):
+        return {"api_key": os.environ["AISSTREAM_API_KEY"]}
+    protected = ROOT / ".aisstream-key.bin"
+    if sys.platform != "win32" or not protected.exists():
+        raise RuntimeError("Configure this relay with the wherevessel setup program first")
+    return {"api_key": decrypt_windows(protected)}
+
+
+def load_key():
+    return load_settings()["api_key"]
+
+
+def send_batch(key, records, device_id="owner"):
     payload = json.dumps(records, separators=(",", ":")).encode()
     stamp = str(int(time.time()))
     signature = hmac.new(key.encode(), stamp.encode() + b"." + payload, hashlib.sha256).hexdigest()
     request = urllib.request.Request(
         os.environ.get("AIS_RELAY_URL", "https://wherevessel-live.onrender.com") + "/api/relay",
         data=payload, headers={"Content-Type": "application/json", "X-AIS-Time": stamp,
-                               "X-AIS-Signature": signature})
+                               "X-AIS-Signature": signature, "X-AIS-Device": device_id})
     with urllib.request.urlopen(request, timeout=20) as response:
         result = json.load(response)
     print("Real AIS messages delivered:", result.get("accepted", 0), flush=True)
 
 
 async def run():
-    key = load_key().strip()
+    settings = load_settings()
+    key = settings["api_key"].strip()
+    signing_key = settings.get("relay_secret", key)
+    device_id = settings.get("device_id", "owner")
     delay = 5
     pending = {}
     async def forward():
@@ -65,7 +82,7 @@ async def run():
             batch = dict(pending)
             pending.clear()
             try:
-                await asyncio.to_thread(send_batch, key, list(batch.values()))
+                await asyncio.to_thread(send_batch, signing_key, list(batch.values()), device_id)
             except Exception as exc:
                 # Keep newest observations when HTTPS delivery is temporarily unavailable.
                 for identity, record in batch.items():

@@ -21,7 +21,7 @@ lock = threading.RLock()
 vessels = json.loads((ROOT / "vessels.json").read_text(encoding="utf-8"))
 observed = {}
 feed = {"state": "awaiting_api_key", "last_received_at": None}
-last_relay_time = 0
+last_relay_times = {}
 
 
 def rate_limit_delay(value, now=None):
@@ -206,7 +206,6 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_error(404)
 
     def do_POST(self):
-        global last_relay_time
         if urlsplit(self.path).path == "/api/relay":
             try:
                 length = int(self.headers.get("Content-Length", "0"))
@@ -214,7 +213,11 @@ class Handler(SimpleHTTPRequestHandler):
                 if not 0 < length <= 2000000 or abs(time.time() - stamp) > 120:
                     raise ValueError()
                 payload = self.rfile.read(length)
-                key = os.environ.get("AISSTREAM_API_KEY", "")
+                device = self.headers.get("X-AIS-Device", "owner")
+                if device == "owner":
+                    key = os.environ.get("AISSTREAM_API_KEY", "")
+                else:
+                    key = json.loads(os.environ.get("AIS_RELAY_TOKENS", "{}")).get(device, "")
                 expected = hmac.new(key.encode(), str(stamp).encode() + b"." + payload, hashlib.sha256).hexdigest()
                 if not key or not hmac.compare_digest(expected, self.headers.get("X-AIS-Signature", "")):
                     self.reply(403, {"success": False})
@@ -226,12 +229,12 @@ class Handler(SimpleHTTPRequestHandler):
                        or not isinstance(record.get("Message"), dict) for record in records):
                     raise ValueError()
                 with lock:
-                    if stamp <= last_relay_time:
+                    if stamp <= last_relay_times.get(device, 0):
                         self.reply(409, {"success": False})
                         return
                     for record in records:
                         ingest(record)
-                    last_relay_time = stamp
+                    last_relay_times[device] = stamp
                     feed["receiver"] = "local_relay"
                 self.reply(200, {"success": True, "accepted": len(records)})
             except (ValueError, TypeError, OverflowError):
