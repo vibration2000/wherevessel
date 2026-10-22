@@ -1,0 +1,21 @@
+# Local credentials and environment
+aisstream_config.json
+.env
+.env.*
+!.env.example
+
+# Python and generated files
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+*.log
+*.tmp
+*.zip
+crash_dom.html
+
+# Local editor and agent settings
+.vscode/
+.agents/
+.codex/
+AGENTS.md

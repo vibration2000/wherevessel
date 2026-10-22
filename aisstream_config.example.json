@@ -1,0 +1,6 @@
+{
+  "api_key": "YOUR_AISSTREAM_API_KEY_HERE",
+  "bounding_box": [[-90.0, -180.0], [90.0, 180.0]],
+  "update_interval_sec": 3,
+  "dead_reckoning_fallback": true
+}

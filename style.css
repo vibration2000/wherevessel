@@ -1,0 +1,2102 @@
+:root {
+  --primary-blue: #1877f2;
+  --primary-blue-hover: #166fe5;
+  --primary-blue-light: #edf5ff;
+  --nav-rail-bg: #0f172a;
+  --nav-rail-hover: #1e293b;
+  --drawer-bg: #ffffff;
+  --border-light: #e2e8f0;
+  --border-lighter: #f1f5f9;
+  --text-dark: #1e293b;
+  --text-medium: #475569;
+  --text-muted: #94a3b8;
+  --text-light: #ffffff;
+  --badge-blue: #2563eb;
+  --shadow-drawer: 4px 0 20px rgba(0, 0, 0, 0.08);
+  --shadow-card: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: 'Pretendard', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  color: var(--text-dark);
+  background-color: #f8fafc;
+  height: 100vh;
+  overflow: hidden;
+  -webkit-font-smoothing: antialiased;
+}
+
+.app-layout {
+  display: flex;
+  height: 100vh;
+  width: 100vw;
+  overflow: hidden;
+  position: relative;
+}
+
+/* ================= 1. Nav Rail (Global Sidebar) ================= */
+.nav-rail {
+  width: 220px;
+  min-width: 220px;
+  background-color: var(--nav-rail-bg);
+  display: flex;
+  flex-direction: column;
+  padding: 16px 12px;
+  z-index: 1000;
+  transition: width 0.25s ease;
+  user-select: none;
+}
+
+.nav-rail.collapsed {
+  width: 68px;
+  min-width: 68px;
+}
+
+.nav-rail.collapsed .brand-names,
+.nav-rail.collapsed .menu-text,
+.nav-rail.collapsed .user-name,
+.nav-rail.collapsed .btn-rail-primary span:not(.plus-icon),
+.nav-rail.collapsed .rail-collapse-btn {
+  display: none;
+}
+
+.rail-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 6px 18px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.rail-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.brand-logo {
+  font-size: 20px;
+}
+
+.brand-names {
+  display: flex;
+  flex-direction: column;
+}
+
+.brand-title {
+  color: #ffffff;
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+}
+
+.brand-sub {
+  color: #94a3b8;
+  font-size: 10px;
+  font-weight: 500;
+  letter-spacing: -0.2px;
+}
+
+.rail-collapse-btn {
+  background: transparent;
+  border: none;
+  color: #64748b;
+  font-size: 11px;
+  cursor: pointer;
+  padding: 4px 6px;
+  border-radius: 4px;
+  transition: all 0.15s;
+}
+
+.rail-collapse-btn:hover {
+  color: #ffffff;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.rail-action-btn-wrap {
+  margin: 18px 0 14px;
+}
+
+.btn-rail-primary {
+  width: 100%;
+  padding: 10px 14px;
+  background: rgba(255, 255, 255, 0.08);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 8px;
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.btn-rail-primary:hover {
+  background: rgba(255, 255, 255, 0.15);
+  border-color: rgba(255, 255, 255, 0.3);
+}
+
+.btn-rail-primary .plus-icon {
+  font-size: 16px;
+  font-weight: 400;
+}
+
+.rail-menu-list {
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+}
+
+.rail-menu-item a {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 14px;
+  border-radius: 10px;
+  color: #94a3b8;
+  text-decoration: none;
+  font-size: 13.5px;
+  font-weight: 600;
+  transition: all 0.15s;
+}
+
+.rail-menu-item a:hover {
+  background: var(--nav-rail-hover);
+  color: #ffffff;
+}
+
+.rail-menu-item.active a {
+  background-color: var(--primary-blue);
+  color: #ffffff;
+  box-shadow: 0 2px 8px rgba(24, 119, 242, 0.4);
+}
+
+/* Quick Vessel Registration Box inside nav-rail */
+.rail-add-vessel-box {
+  margin: 14px 0 10px;
+  background: rgba(30, 41, 59, 0.65);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 10px;
+  padding: 10px 12px;
+  transition: all 0.2s ease;
+}
+
+.rail-add-vessel-box:hover {
+  border-color: rgba(56, 189, 248, 0.5);
+  background: rgba(30, 41, 59, 0.85);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3), 0 0 12px rgba(14, 165, 233, 0.15);
+}
+
+.nav-rail.collapsed .rail-add-vessel-box {
+  display: none;
+}
+
+.rail-add-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.rail-add-label {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #e2e8f0;
+  letter-spacing: -0.2px;
+}
+
+.vessel-count-pill {
+  font-size: 10px;
+  font-weight: 800;
+  color: #38bdf8;
+  background: rgba(14, 165, 233, 0.18);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  padding: 1.5px 7px;
+  border-radius: 12px;
+  font-feature-settings: "tnum";
+}
+
+.rail-add-input-group {
+  display: flex;
+  gap: 6px;
+}
+
+.rail-add-input {
+  flex: 1;
+  background: rgba(15, 23, 42, 0.8);
+  border: 1px solid rgba(148, 163, 184, 0.3);
+  border-radius: 6px;
+  padding: 6px 9px;
+  font-size: 11.5px;
+  color: #ffffff;
+  outline: none;
+  min-width: 0;
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.rail-add-input::placeholder {
+  color: #64748b;
+  font-size: 11px;
+}
+
+.rail-add-input:focus {
+  border-color: #38bdf8;
+  box-shadow: 0 0 0 2px rgba(56, 189, 248, 0.2);
+}
+
+.rail-btn-add {
+  background: linear-gradient(135deg, #0284c7 0%, #00e5ff 100%);
+  color: #ffffff;
+  border: none;
+  border-radius: 6px;
+  padding: 6px 11px;
+  font-size: 11.5px;
+  font-weight: 700;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: opacity 0.15s, transform 0.1s;
+}
+
+.rail-btn-add:hover {
+  opacity: 0.92;
+  transform: translateY(-1px);
+}
+
+.rail-btn-add:active {
+  transform: translateY(0);
+}
+
+.rail-btn-add:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.rail-add-status-msg {
+  font-size: 10.5px;
+  margin-top: 6px;
+  line-height: 1.4;
+  min-height: 0;
+  transition: all 0.2s;
+  display: none;
+}
+
+.rail-add-status-msg.show {
+  display: block;
+}
+
+.rail-add-status-msg.loading {
+  color: #38bdf8;
+}
+
+.rail-add-status-msg.success {
+  color: #4ade80;
+}
+
+.rail-add-status-msg.error {
+  color: #f87171;
+}
+
+.menu-icon {
+  font-size: 16px;
+}
+
+.rail-footer {
+  padding-top: 14px;
+  border-top: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.app-status-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #94a3b8;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 6px 4px;
+}
+
+.pulse-indicator {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #10b981;
+  box-shadow: 0 0 8px #10b981;
+  display: inline-block;
+  animation: pulseGreen 2s infinite ease-in-out;
+}
+
+@keyframes pulseGreen {
+  0%, 100% { transform: scale(1); opacity: 1; }
+  50% { transform: scale(1.3); opacity: 0.6; }
+}
+
+.creator-signature {
+  font-size: 10px;
+  color: #64748b;
+  opacity: 0.55;
+  padding: 4px 4px 0;
+  letter-spacing: 0.3px;
+  font-weight: 400;
+  white-space: nowrap;
+  user-select: none;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  transition: opacity 0.2s;
+}
+
+.creator-signature:hover {
+  opacity: 0.85;
+  color: #94a3b8;
+}
+
+.bottom-creator-watermark {
+  position: absolute;
+  bottom: 8px;
+  right: 14px;
+  z-index: 700;
+  font-size: 10px;
+  color: #64748b;
+  opacity: 0.45;
+  pointer-events: none;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  letter-spacing: 0.4px;
+  user-select: none;
+}
+
+
+/* ================= 2. Vessel Detail Drawer (Middle Left) ================= */
+.vessel-drawer {
+  width: 480px;
+  min-width: 480px;
+  background-color: var(--drawer-bg);
+  border-right: 1px solid var(--border-light);
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  z-index: 500;
+  box-shadow: var(--shadow-drawer);
+  overflow: hidden;
+}
+
+.drawer-header {
+  height: 56px;
+  padding: 0 18px;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.btn-icon {
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  color: var(--text-dark);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.header-left h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.header-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.time-toggle-group {
+  display: flex;
+  align-items: center;
+  background: #f1f5f9;
+  border-radius: 20px;
+  padding: 2px;
+}
+
+.btn-toggle-time {
+  border: none;
+  background: transparent;
+  padding: 4px 10px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-muted);
+  border-radius: 16px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  transition: all 0.2s;
+}
+
+.btn-toggle-time .check-mark {
+  font-size: 11px;
+  opacity: 0;
+}
+
+.btn-toggle-time.active {
+  background: #2563eb;
+  color: #ffffff;
+}
+
+.btn-toggle-time.active .check-mark {
+  opacity: 1;
+}
+
+.btn-icon-close {
+  background: transparent;
+  border: none;
+  font-size: 16px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+}
+
+.btn-icon-close:hover {
+  color: var(--text-dark);
+}
+
+/* Vessel Search Section */
+.vessel-search-section {
+  padding: 12px 18px 10px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.search-input-box {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 6px 10px 6px 12px;
+  gap: 8px;
+  color: var(--text-muted);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+  transition: all 0.2s;
+}
+
+.search-input-box:focus-within {
+  border-color: var(--primary-blue);
+  box-shadow: 0 0 0 3px rgba(24, 119, 242, 0.15);
+}
+
+.search-input-box input {
+  flex: 1;
+  border: none;
+  outline: none;
+  font-size: 13px;
+  color: var(--text-dark);
+  font-weight: 600;
+}
+
+.search-input-box input::placeholder {
+  color: #94a3b8;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* Green Live Pulse Dot */
+.live-pulse-dot {
+  width: 8px;
+  height: 8px;
+  background-color: #10b981;
+  border-radius: 50%;
+  box-shadow: 0 0 0 rgba(16, 185, 129, 0.4);
+  animation: liveDotPulse 1.8s infinite;
+}
+
+@keyframes liveDotPulse {
+  0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.7); }
+  70% { box-shadow: 0 0 0 8px rgba(16, 185, 129, 0); }
+  100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+}
+
+/* Instant Suggestions Dropdown */
+.search-suggestions-dropdown {
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+  z-index: 1000;
+  max-height: 220px;
+  overflow-y: auto;
+  display: none;
+}
+
+.search-suggestions-dropdown.open {
+  display: block;
+}
+
+.suggestion-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 9px 12px;
+  cursor: pointer;
+  border-bottom: 1px solid #f1f5f9;
+  transition: background 0.15s;
+}
+
+.suggestion-item:last-child {
+  border-bottom: none;
+}
+
+.suggestion-item:hover, .suggestion-item.highlighted {
+  background: #f0f7ff;
+}
+
+.sugg-name {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.sugg-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.quick-vessel-chips {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin-top: 8px;
+  flex-wrap: wrap;
+}
+
+.chips-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.vessel-chip {
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 12px;
+  padding: 3px 8px;
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--text-medium);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.vessel-chip:hover {
+  background: #edf5ff;
+  border-color: #93c5fd;
+  color: var(--primary-blue);
+}
+
+.vessel-chip.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+/* Vessel Summary Card */
+.vessel-summary-card {
+  padding: 14px 20px 14px;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.summary-top {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: 10px;
+}
+
+.naming-title-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 2px;
+}
+
+.vessel-naming .label-tiny {
+  font-size: 11px;
+  color: var(--text-muted);
+  display: block;
+}
+
+.btn-laser-replay {
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  color: #4f46e5;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 6px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  transition: all 0.2s;
+  box-shadow: 0 1px 2px rgba(79, 70, 229, 0.1);
+}
+
+.btn-laser-replay:hover {
+  background: #4f46e5;
+  color: #ffffff;
+  border-color: #4f46e5;
+  box-shadow: 0 0 10px rgba(79, 70, 229, 0.4);
+}
+
+.title-with-badge {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.title-with-badge h1 {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-dark);
+  letter-spacing: -0.3px;
+}
+
+.badge-status-pill {
+  padding: 2px 8px;
+  background: #e0f2fe;
+  color: #0369a1;
+  border-radius: 12px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.vessel-illustration .ship-emoji {
+  font-size: 26px;
+}
+
+/* External Maps Quick Launcher Row */
+.external-maps-bar {
+  display: none !important; /* Hide external map chips as requested */
+  align-items: center;
+  justify-content: space-between;
+  background: #f8fafc;
+  padding: 8px 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border-light);
+  margin-bottom: 14px;
+}
+
+.ext-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  font-weight: 600;
+}
+
+.ext-map-chips {
+  display: flex;
+  gap: 6px;
+}
+
+.chip-map {
+  padding: 3px 8px;
+  border-radius: 5px;
+  font-size: 11px;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.15s;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05);
+}
+
+.chip-map.kakao {
+  background: #fee500;
+  color: #191919;
+  border: 1px solid #e5ce00;
+}
+.chip-map.kakao:hover {
+  background: #ffd600;
+}
+
+.chip-map.naver {
+  background: #03c75a;
+  color: #ffffff;
+  border: 1px solid #02b350;
+}
+.chip-map.naver:hover {
+  background: #029e46;
+}
+
+.chip-map.osm {
+  background: #ffffff;
+  color: #2b7489;
+  border: 1px solid #cbd5e1;
+}
+.chip-map.osm:hover {
+  background: #f1f5f9;
+}
+
+.chip-map.marine {
+  background: #1e3a8a;
+  color: #ffffff;
+  border: 1px solid #172554;
+}
+.chip-map.marine:hover {
+  background: #1e40af;
+}
+
+/* 3x2 Metadata Grid */
+.meta-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 10px 14px;
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  background-color: #f8fafc;
+  border-radius: 8px;
+  border: 1px solid var(--border-lighter);
+}
+
+.meta-cell {
+  display: flex;
+  flex-direction: column;
+}
+
+.meta-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-bottom: 2px;
+}
+
+.meta-val {
+  font-size: 12.5px;
+  font-weight: 700;
+  color: var(--text-dark);
+}
+
+.meta-val.highlight {
+  color: var(--primary-blue);
+}
+
+/* Tabs */
+.drawer-tabs {
+  display: flex;
+  gap: 8px;
+}
+
+.drawer-tab-btn {
+  flex: 1;
+  padding: 8px;
+  border: 1px solid var(--border-light);
+  background: #ffffff;
+  color: var(--text-medium);
+  font-size: 13px;
+  font-weight: 600;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.drawer-tab-btn.active {
+  border-color: var(--primary-blue);
+  color: var(--primary-blue);
+  background: #f0f7ff;
+}
+
+/* Voyages Accordion List */
+.voyages-accordion-list {
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.voyages-accordion-list::-webkit-scrollbar {
+  width: 5px;
+}
+
+.voyages-accordion-list::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 3px;
+}
+
+.voyage-acc-item {
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: var(--shadow-card);
+  transition: all 0.2s;
+}
+
+.voyage-acc-item.active {
+  border-color: #93c5fd;
+  box-shadow: 0 2px 10px rgba(37, 99, 235, 0.08);
+}
+
+.acc-header {
+  padding: 12px 14px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  cursor: pointer;
+}
+
+.route-ports {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex: 1;
+}
+
+.port-box {
+  display: flex;
+  flex-direction: column;
+}
+
+.port-box small {
+  font-size: 10px;
+  color: var(--text-muted);
+}
+
+.port-box strong {
+  font-size: 13.5px;
+  color: var(--text-dark);
+  font-weight: 700;
+}
+
+.port-box strong.text-muted {
+  color: var(--text-muted);
+  font-weight: 500;
+}
+
+.route-arrow {
+  color: #94a3b8;
+  font-size: 11px;
+  letter-spacing: -1px;
+}
+
+.acc-chevron {
+  font-size: 12px;
+  color: var(--text-muted);
+  padding-left: 10px;
+}
+
+/* Accordion Body & Log Table */
+.acc-body {
+  border-top: 1px solid var(--border-light);
+  padding: 10px 12px 12px;
+  background-color: #fafbfc;
+  border-radius: 0 0 8px 8px;
+}
+
+.log-table-wrapper {
+  overflow-x: auto;
+}
+
+.ais-log-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 11px;
+  text-align: center;
+}
+
+.ais-log-table th {
+  padding: 6px 4px;
+  color: var(--text-muted);
+  font-weight: 600;
+  border-bottom: 1px solid var(--border-light);
+}
+
+.ais-log-table td {
+  padding: 7px 4px;
+  color: var(--text-dark);
+  border-bottom: 1px solid var(--border-lighter);
+  font-feature-settings: "tnum";
+  font-variant-numeric: tabular-nums;
+}
+
+.badge-status-blue {
+  background-color: #2563eb;
+  color: #ffffff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 600;
+}
+
+/* Real-time Live Log Status Bar & Highlights */
+.log-table-status-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-bottom: 8px;
+  font-size: 11px;
+}
+
+.log-status-left {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  color: #166534;
+  font-weight: 600;
+}
+
+.live-pulse-beacon {
+  width: 8px;
+  height: 8px;
+  background-color: #22c55e;
+  border-radius: 50%;
+  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  animation: beaconPulse 1.8s infinite;
+}
+
+@keyframes beaconPulse {
+  0% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.7);
+  }
+  70% {
+    transform: scale(1.15);
+    box-shadow: 0 0 0 7px rgba(34, 197, 94, 0);
+  }
+  100% {
+    transform: scale(0.95);
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0);
+  }
+}
+
+.log-status-right {
+  display: flex;
+  align-items: center;
+}
+
+.log-live-badge {
+  font-size: 10px;
+  font-weight: 700;
+  color: #15803d;
+  background: #dcfce7;
+  border: 1px solid #86efac;
+  padding: 2px 6px;
+  border-radius: 10px;
+}
+
+/* Row Styling for Latest Live AIS Log */
+.row-live-latest {
+  background-color: #f0fdf4 !important;
+  font-weight: 600;
+  transition: background-color 0.4s ease;
+}
+
+.row-live-latest td {
+  border-bottom: 1.5px solid #86efac !important;
+  color: #0f172a !important;
+}
+
+.badge-status-live {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background-color: #16a34a;
+  color: #ffffff;
+  padding: 2px 7px;
+  border-radius: 4px;
+  font-size: 10.5px;
+  font-weight: 700;
+  box-shadow: 0 1px 4px rgba(22, 163, 74, 0.3);
+}
+
+.live-dot-ping {
+  width: 6px;
+  height: 6px;
+  background-color: #ffffff;
+  border-radius: 50%;
+  display: inline-block;
+  animation: pingDot 1.2s infinite ease-in-out;
+}
+
+@keyframes pingDot {
+  0%, 100% { opacity: 0.3; transform: scale(0.8); }
+  50% { opacity: 1; transform: scale(1.2); }
+}
+
+.time-live-text {
+  color: #15803d;
+  font-weight: 800;
+}
+
+.badge-new-live {
+  font-size: 9.5px;
+  font-weight: 800;
+  background: #ef4444;
+  color: #ffffff;
+  padding: 1px 4px;
+  border-radius: 3px;
+  margin-left: 4px;
+  letter-spacing: 0.5px;
+}
+
+.row-log-history:hover, .row-live-latest:hover {
+  background-color: #e2e8f0 !important;
+}
+
+/* ================= 3. Map View ================= */
+.map-container {
+  flex: 1;
+  position: relative;
+  height: 100vh;
+}
+
+#map {
+  width: 100%;
+  height: 100%;
+  background: #f4f5f8;
+}
+
+/* Floating Controls on Map */
+.map-floating-top {
+  position: absolute;
+  top: 16px;
+  right: 20px;
+  z-index: 800;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+/* Layer Pills */
+.map-layer-selector {
+  display: flex;
+  background: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  padding: 3px;
+  border-radius: 8px;
+  border: 1px solid #cbd5e1;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  gap: 3px;
+}
+
+.layer-pill-btn {
+  background: transparent;
+  border: none;
+  padding: 5px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 600;
+  color: var(--text-medium);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.layer-pill-btn:hover {
+  background: #f1f5f9;
+  color: var(--text-dark);
+}
+
+.layer-pill-btn.active {
+  background: #1e293b;
+  color: #ffffff;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.2);
+}
+
+.search-mini-box {
+  background: rgba(30, 41, 59, 0.9);
+  backdrop-filter: blur(8px);
+  padding: 6px 12px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.search-mini-box input {
+  background: transparent;
+  border: none;
+  outline: none;
+  color: #ffffff;
+  font-size: 12.5px;
+  width: 110px;
+}
+
+.search-mini-box .search-icon {
+  font-size: 11px;
+}
+
+/* External Map Dropdown */
+.map-dropdown-container {
+  position: relative;
+}
+
+.btn-map-dropdown {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  border-radius: 8px;
+  padding: 7px 12px;
+  color: #1e293b;
+  font-size: 12px;
+  font-weight: 700;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.15s;
+}
+
+.btn-map-dropdown:hover {
+  background: #f8fafc;
+  border-color: #94a3b8;
+}
+
+.map-dropdown-menu {
+  position: absolute;
+  top: calc(100% + 6px);
+  right: 0;
+  background: #ffffff;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+  display: none;
+  flex-direction: column;
+  min-width: 200px;
+  z-index: 900;
+  overflow: hidden;
+}
+
+.map-dropdown-menu.show {
+  display: flex;
+}
+
+.dropdown-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  color: var(--text-dark);
+  text-decoration: none;
+  font-size: 12px;
+  font-weight: 600;
+  transition: background 0.15s;
+}
+
+.dropdown-item:hover {
+  background: #f1f5f9;
+}
+
+.dropdown-item .dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+}
+
+.kakao-dot { background: #fee500; border: 1px solid #caa800; }
+.naver-dot { background: #03c75a; }
+.osm-dot { background: #2b7489; }
+.marine-dot { background: #1e3a8a; }
+
+.profile-group {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.bell-btn {
+  background: #ffffff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  cursor: pointer;
+  font-size: 13px;
+}
+
+.avatar-sm {
+  background: #3b82f6;
+  color: #fff;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+  font-size: 13px;
+  cursor: pointer;
+}
+
+/* Map Custom Markers */
+.tradlinx-marker-wrap {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.marker-label-box {
+  background: #ffffff;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: #0f172a;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+  white-space: nowrap;
+  margin-bottom: 6px;
+  position: relative;
+}
+
+.marker-label-box::after {
+  content: '';
+  position: absolute;
+  bottom: -4px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid #ffffff;
+}
+
+/* Current Ship Position Speech Bubble (📍 현재 위치 안내 말풍선) */
+.ship-speech-bubble {
+  position: relative;
+  background: #ffffff;
+  border: 1.5px solid #0284c7;
+  border-radius: 8px;
+  padding: 3.5px 9px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  box-shadow: 0 4px 14px rgba(2, 132, 199, 0.3), 0 1px 3px rgba(0, 0, 0, 0.12);
+  white-space: nowrap;
+  margin-bottom: 8px;
+  animation: speechBubbleHover 2.2s ease-in-out infinite alternate;
+}
+
+.ship-speech-bubble .bubble-arrow {
+  position: absolute;
+  bottom: -6.5px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 0;
+  height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid #0284c7;
+}
+
+.ship-speech-bubble .bubble-arrow::after {
+  content: "";
+  position: absolute;
+  bottom: 1.5px;
+  left: -5px;
+  width: 0;
+  height: 0;
+  border-left: 5px solid transparent;
+  border-right: 5px solid transparent;
+  border-top: 5px solid #ffffff;
+}
+
+.bubble-tag {
+  background: #0284c7;
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 2px 6px;
+  border-radius: 4px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  letter-spacing: -0.2px;
+}
+
+.bubble-beacon {
+  width: 5px;
+  height: 5px;
+  background-color: #22c55e;
+  border-radius: 50%;
+  box-shadow: 0 0 5px #22c55e;
+  display: inline-block;
+  animation: beaconPulse 1.4s infinite;
+}
+
+.bubble-name {
+  font-size: 11.5px;
+  font-weight: 800;
+  color: #0f172a;
+  letter-spacing: -0.2px;
+}
+
+@keyframes speechBubbleHover {
+  0% { transform: translateY(0); }
+  100% { transform: translateY(-3px); }
+}
+
+.marker-arrow-circle {
+  width: 22px;
+  height: 22px;
+  background-color: #0f172a;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
+}
+
+.marker-arrow-circle svg {
+  fill: #ffffff;
+}
+
+.route-waypoint-arrow {
+  width: 18px;
+  height: 18px;
+  background-color: #1e3a8a;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.3);
+}
+
+.route-waypoint-arrow svg {
+  fill: #ffffff;
+}
+
+/* ================= 4. Laser Route Animation Effects ================= */
+/* Base Track Polyline */
+.laser-base-track {
+  stroke: #1e3a8a !important;
+  stroke-width: 3.5px !important;
+  stroke-opacity: 0.45 !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+}
+
+/* Glowing Laser Drawing Line (쭈욱~~ 뻗어나가는 인트로 레이저 빔) */
+.laser-beam-draw {
+  stroke: #00e5ff !important;
+  stroke-width: 4px !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  filter: drop-shadow(0 0 6px #00e5ff) drop-shadow(0 0 12px rgba(0, 229, 255, 0.8)) !important;
+  animation: laserDrawIn 3.2s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+}
+
+@keyframes laserDrawIn {
+  from {
+    stroke-dashoffset: 2000;
+  }
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Continuous Laser Comet Stream (시작점에서 선박까지 끊임없이 흘러가는 레이저 광선) */
+.laser-pulse-flow {
+  stroke: #38bdf8 !important;
+  stroke-width: 4.5px !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  stroke-dasharray: 60, 280 !important;
+  animation: laserStream 2.6s linear infinite !important;
+  filter: drop-shadow(0 0 8px #38bdf8) drop-shadow(0 0 16px rgba(56, 189, 248, 0.9)) !important;
+}
+
+@keyframes laserStream {
+  0% {
+    stroke-dashoffset: 680;
+  }
+  100% {
+    stroke-dashoffset: 0;
+  }
+}
+
+/* Ship Pulse Ping Ripple (선박 마커 주변의 레이저 파동) */
+.tradlinx-marker-wrap {
+  position: relative;
+}
+
+.ship-radar-ping-ring {
+  position: absolute;
+  bottom: 0;
+  left: 50%;
+  transform: translate(-50%, 0);
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  border: 2px solid #00e5ff;
+  background: rgba(0, 229, 255, 0.3);
+  animation: shipPingRipple 2s infinite ease-out;
+  pointer-events: none;
+  z-index: -1;
+}
+
+@keyframes shipPingRipple {
+  0% {
+    transform: translate(-50%, 0) scale(0.6);
+    opacity: 1;
+  }
+  100% {
+    transform: translate(-50%, 0) scale(2.8);
+    opacity: 0;
+  }
+}
+
+
+
+/* Start Port Marker Badge (출발항 마커) */
+.start-port-marker-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.start-port-badge {
+  background: #0f172a;
+  color: #ffffff;
+  border: 1.5px solid #10b981;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 4px 14px rgba(16, 185, 129, 0.4);
+  white-space: nowrap;
+}
+
+.start-port-pin {
+  font-size: 12px;
+  color: #10b981;
+}
+
+.start-port-text {
+  color: #f1f5f9;
+}
+
+
+/* ================= 5. Fleet Modal & Header Button ================= */
+.btn-open-fleet-modal {
+  background: #f1f5f9;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  padding: 5px 10px;
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--text-dark);
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.15s;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn-open-fleet-modal:hover {
+  background: #e2e8f0;
+  border-color: #94a3b8;
+  color: var(--primary-blue);
+}
+
+/* Modal Overlay */
+.fleet-modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(15, 23, 42, 0.6);
+  backdrop-filter: blur(4px);
+  z-index: 2000;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.fleet-modal-overlay.open {
+  display: flex;
+}
+
+.fleet-modal-container {
+  background: #ffffff;
+  width: 100%;
+  max-width: 880px;
+  max-height: 85vh;
+  border-radius: 12px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.25);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  animation: modalPopIn 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes modalPopIn {
+  from { transform: scale(0.96); opacity: 0; }
+  to { transform: scale(1); opacity: 1; }
+}
+
+.fleet-modal-header {
+  padding: 16px 20px;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.modal-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.modal-icon {
+  font-size: 24px;
+}
+
+.modal-title-wrap h3 {
+  font-size: 16px;
+  font-weight: 800;
+  color: var(--text-dark);
+  margin-bottom: 2px;
+}
+
+.modal-title-wrap p {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.modal-close-btn {
+  background: transparent;
+  border: none;
+  font-size: 18px;
+  color: var(--text-muted);
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 4px;
+}
+
+.modal-close-btn:hover {
+  color: var(--text-dark);
+  background: #f1f5f9;
+}
+
+/* Modal Filter Tabs */
+.fleet-modal-filter-bar {
+  padding: 10px 20px;
+  background: #f8fafc;
+  border-bottom: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.modal-search-box input {
+  padding: 7px 14px;
+  font-size: 12px;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+  width: 220px;
+  outline: none;
+  background: #ffffff;
+  transition: border-color 0.15s;
+}
+
+.modal-search-box input:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.15);
+}
+
+.modal-tab-group {
+  display: flex;
+  gap: 8px;
+}
+
+.modal-tab-btn {
+  background: #ffffff;
+  border: 1px solid #cbd5e1;
+  padding: 6px 14px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text-medium);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.modal-tab-btn:hover {
+  border-color: var(--primary-blue);
+  color: var(--primary-blue);
+}
+
+.modal-tab-btn.active {
+  background: #2563eb;
+  border-color: #2563eb;
+  color: #ffffff;
+}
+
+/* Modal Cards Body */
+.fleet-modal-body {
+  padding: 18px 20px;
+  overflow-y: auto;
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+.fleet-card {
+  border: 1px solid var(--border-light);
+  border-radius: 8px;
+  padding: 12px 14px;
+  cursor: pointer;
+  background: #ffffff;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.fleet-card:hover {
+  border-color: var(--primary-blue);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.12);
+  transform: translateY(-1px);
+}
+
+.fleet-card.selected {
+  border-color: #2563eb;
+  background: #f0f7ff;
+}
+
+.fleet-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.fleet-card-carrier {
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-muted);
+}
+
+.fleet-card-speed {
+  font-size: 11px;
+  font-weight: 700;
+  color: #2563eb;
+}
+
+.fleet-card-name {
+  font-size: 14px;
+  font-weight: 800;
+  color: var(--text-dark);
+  margin-bottom: 4px;
+}
+
+.fleet-card-route {
+  font-size: 11.5px;
+  color: var(--text-medium);
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fleet-card-route .arrow {
+  color: var(--text-muted);
+}
+
+
+/* Destination Port Marker Badge (도착항 마커) */
+.dest-port-marker-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  cursor: pointer;
+}
+
+.dest-port-badge {
+  background: #0f172a;
+  color: #ffffff;
+  border: 1.5px solid #f59e0b;
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+  font-weight: 700;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  box-shadow: 0 4px 14px rgba(245, 158, 11, 0.45);
+  white-space: nowrap;
+}
+
+.dest-port-pin {
+  font-size: 12px;
+  color: #f59e0b;
+}
+
+.dest-port-text {
+  color: #fef3c7;
+}
+
+/* Planned Future Route Laser (갈 길: 선박 위치 ➔ 도착항) */
+.laser-planned-track {
+  stroke: #78350f !important;
+  stroke-width: 3px !important;
+  stroke-opacity: 0.4 !important;
+  stroke-dasharray: 6, 8 !important;
+}
+
+.laser-planned-beam {
+  stroke: #f59e0b !important;
+  stroke-width: 3.5px !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  stroke-dasharray: 10, 14 !important;
+  filter: drop-shadow(0 0 6px #f59e0b) drop-shadow(0 0 12px rgba(245, 158, 11, 0.7)) !important;
+  animation: plannedLaserDrawIn 2.8s cubic-bezier(0.25, 1, 0.5, 1) forwards !important;
+}
+
+@keyframes plannedLaserDrawIn {
+  from { stroke-dashoffset: 1500; }
+  to { stroke-dashoffset: 0; }
+}
+
+.laser-planned-flow {
+  stroke: #fbbf24 !important;
+  stroke-width: 3.5px !important;
+  stroke-linecap: round !important;
+  stroke-linejoin: round !important;
+  stroke-dasharray: 14, 20 !important;
+  animation: plannedLaserStream 2.2s linear infinite !important;
+  filter: drop-shadow(0 0 8px #fbbf24) drop-shadow(0 0 14px rgba(251, 191, 36, 0.8)) !important;
+}
+
+@keyframes plannedLaserStream {
+  0% { stroke-dashoffset: 340; }
+  100% { stroke-dashoffset: 0; }
+}
+
+.route-planned-arrow {
+  width: 18px;
+  height: 18px;
+  background-color: #d97706;
+  border: 2px solid #ffffff;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 1px 4px rgba(217, 119, 6, 0.4);
+}
+
+.route-planned-arrow svg {
+  fill: #ffffff;
+}
+
+/* Route Status Legend Pill */
+.route-legend-pill {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: #f8fafc;
+  border: 1px solid #e2e8f0;
+  border-radius: 6px;
+  padding: 6px 10px;
+  margin-top: 8px;
+  font-size: 11px;
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  font-weight: 600;
+  color: var(--text-medium);
+}
+
+.legend-line-past {
+  width: 18px;
+  height: 3px;
+  background: #00e5ff;
+  border-radius: 2px;
+  box-shadow: 0 0 4px #00e5ff;
+}
+
+.legend-line-future {
+  width: 18px;
+  height: 3px;
+  background: repeating-linear-gradient(90deg, #f59e0b 0, #f59e0b 4px, transparent 4px, transparent 7px);
+  border-radius: 2px;
+}
+
+
+/* Voyage History Badges */
+.badge-past-done {
+  font-size: 10px;
+  background: #f1f5f9;
+  color: #64748b;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 600;
+  margin-left: auto;
+  margin-right: 6px;
+}
+
+.badge-active-pulse {
+  font-size: 10px;
+  background: #eff6ff;
+  color: #2563eb;
+  border: 1px solid #bfdbfe;
+  padding: 2px 7px;
+  border-radius: 12px;
+  font-weight: 700;
+  margin-left: auto;
+  margin-right: 6px;
+}
+
+.empty-voyage-notice {
+  padding: 12px 14px;
+  background: #f8fafc;
+  border: 1px dashed #cbd5e1;
+  border-radius: 6px;
+  color: #64748b;
+  font-size: 11.5px;
+  text-align: center;
+  margin-top: 8px;
+}
+
+/* ========================================================= */
+/* wherevessel Startup Splash Screen & Caterpillar Loader    */
+/* ========================================================= */
+.wherevessel-splash-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background: radial-gradient(circle at center, #0f172a 0%, #030712 100%);
+  z-index: 99999;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.6s cubic-bezier(0.4, 0, 0.2, 1), visibility 0.6s;
+}
+
+.wherevessel-splash-overlay.fade-out {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+}
+
+.splash-card {
+  width: 500px;
+  max-width: 92vw;
+  background: rgba(15, 23, 42, 0.92);
+  backdrop-filter: blur(25px);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  border-radius: 20px;
+  padding: 30px 32px 34px;
+  box-shadow: 0 30px 70px -15px rgba(0, 0, 0, 0.9), 0 0 50px rgba(14, 165, 233, 0.2);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  animation: splashPop 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+@keyframes splashPop {
+  0% { transform: scale(0.92); opacity: 0; }
+  100% { transform: scale(1); opacity: 1; }
+}
+
+.splash-image-wrap {
+  width: 240px;
+  height: 240px;
+  border-radius: 16px;
+  overflow: hidden;
+  box-shadow: 0 12px 36px rgba(0, 229, 255, 0.35);
+  border: 1.5px solid rgba(0, 229, 255, 0.5);
+  position: relative;
+  margin-bottom: 22px;
+}
+
+.splash-img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
+.splash-title-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: center;
+  gap: 10px;
+}
+
+.splash-brand-title {
+  font-size: 28px;
+  font-weight: 800;
+  letter-spacing: -0.5px;
+  background: linear-gradient(135deg, #ffffff 40%, #38bdf8 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  margin: 0;
+}
+
+.splash-version {
+  font-size: 11px;
+  background: rgba(14, 165, 233, 0.2);
+  color: #38bdf8;
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-weight: 700;
+}
+
+.splash-subtitle {
+  font-size: 12px;
+  color: #94a3b8;
+  margin: 6px 0 24px;
+  letter-spacing: 0.3px;
+}
+
+/* Classic Windows "지렁이" Caterpillar Progress Track */
+.caterpillar-track {
+  width: 100%;
+  height: 22px;
+  background: #020617;
+  border: 1.5px solid rgba(0, 229, 255, 0.55);
+  border-radius: 11px;
+  overflow: hidden;
+  position: relative;
+  box-shadow: inset 0 3px 10px rgba(0, 0, 0, 0.95), 0 0 18px rgba(0, 229, 255, 0.25);
+}
+
+.caterpillar-fill {
+  height: 100%;
+  width: 0%;
+  background: linear-gradient(90deg, #0369a1 0%, #0284c7 50%, #00e5ff 100%);
+  border-radius: 9px;
+  position: relative;
+  transition: width 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 0 16px #00e5ff;
+  overflow: hidden;
+  z-index: 1;
+}
+
+/* Moving segmented blocks inside the fill */
+.caterpillar-segments {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: repeating-linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0.9) 0px,
+    rgba(255, 255, 255, 0.9) 10px,
+    transparent 10px,
+    transparent 17px
+  );
+  animation: segmentsSlide 0.65s linear infinite;
+}
+
+@keyframes segmentsSlide {
+  0% { transform: translateX(0); }
+  100% { transform: translateX(34px); }
+}
+
+/* Roving Caterpillar Worm (좌에서 우로 쭈~~욱 기어가는 지렁이 무리) */
+.caterpillar-crawler {
+  position: absolute;
+  top: 3px;
+  bottom: 3px;
+  width: 110px;
+  display: flex;
+  gap: 4px;
+  animation: wormCrawlAcross 2.4s cubic-bezier(0.4, 0, 0.2, 1) infinite;
+  pointer-events: none;
+  z-index: 3;
+}
+
+.worm-segment {
+  flex: 1;
+  height: 100%;
+  border-radius: 4px;
+  background: linear-gradient(180deg, #a5f3fc 0%, #00e5ff 50%, #0284c7 100%);
+  box-shadow: 0 0 12px #00e5ff, 0 0 20px rgba(0, 229, 255, 0.9);
+}
+
+.worm-segment.s1 { opacity: 0.4; }
+.worm-segment.s2 { opacity: 0.7; }
+.worm-segment.s3 { opacity: 0.92; }
+.worm-segment.s4 { 
+  opacity: 1; 
+  background: #ffffff;
+  box-shadow: 0 0 14px #ffffff, 0 0 24px #00e5ff;
+}
+
+@keyframes wormCrawlAcross {
+  0% {
+    left: -120px;
+  }
+  100% {
+    left: 100%;
+  }
+}
+
+.splash-status-row {
+  width: 100%;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 12px;
+  font-size: 11.5px;
+  color: #64748b;
+  font-weight: 500;
+}
+
+.splash-status-text {
+  color: #94a3b8;
+}
+
+.splash-percent-text {
+  color: #00e5ff;
+  font-weight: 700;
+  font-feature-settings: "tnum";
+}

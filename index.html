@@ -1,0 +1,294 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>wherevessel - 실시간 선박 관제 솔루션</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
+  
+  <!-- Leaflet CSS -->
+  <link rel="stylesheet" href="leaflet.css">
+  
+  <!-- Custom Styles -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <!-- wherevessel Startup Splash Screen with Caterpillar Progress Bar -->
+  <div class="wherevessel-splash-overlay" id="appSplashOverlay">
+    <div class="splash-card">
+      <div class="splash-image-wrap">
+        <img src="splash_image.jpg" alt="wherevessel" class="splash-img">
+      </div>
+      
+      <div class="splash-info">
+        <div class="splash-title-row">
+          <h2 class="splash-brand-title">wherevessel</h2>
+          <span class="splash-version">v1.0 Pro</span>
+        </div>
+        <p class="splash-subtitle">Realtime Maritime Vessel Tracking &amp; Logistics</p>
+      </div>
+
+      <!-- Classic Windows '지렁이' Animated Progress Bar -->
+      <div class="caterpillar-track">
+        <div class="caterpillar-fill" id="splashProgressFill">
+          <span class="caterpillar-segments"></span>
+        </div>
+        <!-- Roving Caterpillar Worm (좌에서 우로 쭈~~욱 기어가는 지렁이) -->
+        <div class="caterpillar-crawler">
+          <span class="worm-segment s1"></span>
+          <span class="worm-segment s2"></span>
+          <span class="worm-segment s3"></span>
+          <span class="worm-segment s4"></span>
+        </div>
+      </div>
+
+      <div class="splash-status-row">
+        <span class="splash-status-text" id="splashStatusText">시스템 구성 요소 검사 및 서버 연결 중...</span>
+        <span class="splash-percent-text" id="splashPercentText">0%</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="app-layout">
+    <!-- 1. Left Nav Rail (Global Menu) -->
+    <nav class="nav-rail">
+      <div class="rail-header">
+        <div class="rail-brand">
+          <span class="brand-logo">🚢</span>
+          <div class="brand-names">
+            <span class="brand-title">wherevessel</span>
+            <span class="brand-sub">Realtime Tracker</span>
+          </div>
+        </div>
+        <button class="rail-collapse-btn" id="collapseRailBtn" title="메뉴 접기">
+          &lt; 접기
+        </button>
+      </div>
+
+      <ul class="rail-menu-list">
+        <!-- Active Working Menu -->
+        <li class="rail-menu-item active" id="menuTracking">
+          <a href="#tracking">
+            <span class="menu-icon">📡</span>
+            <span class="menu-text">실시간 관제</span>
+          </a>
+        </li>
+      </ul>
+
+      <!-- Quick Vessel Registration Panel (배이름 입력 및 실시간 크롤링 등록) -->
+      <div class="rail-add-vessel-box" id="railAddVesselBox">
+        <div class="rail-add-header">
+          <span class="rail-add-label">➕ 선박 실시간 등록</span>
+          <span class="vessel-count-pill" id="railVesselCountBadge">274척</span>
+        </div>
+        <div class="rail-add-input-group">
+          <input 
+            type="text" 
+            id="railAddVesselInput" 
+            class="rail-add-input" 
+            placeholder="선박명/MMSI 입력..." 
+            title="새로 추가할 선박명을 입력하세요"
+            autocomplete="off"
+          />
+          <button type="button" id="railBtnAddVessel" class="rail-btn-add">추가</button>
+        </div>
+        <div class="rail-add-status-msg" id="railAddStatusMsg"></div>
+      </div>
+
+      <div class="rail-footer">
+        <div class="app-status-badge">
+          <span class="pulse-indicator"></span>
+          <span class="status-name">wherevessel v1.0</span>
+        </div>
+        <div class="creator-signature">created by KOMYUNGHEE</div>
+      </div>
+    </nav>
+
+    <!-- 2. Vessel Detail & Route Drawer (Middle Left Panel) -->
+    <aside class="vessel-drawer" id="vesselDrawer">
+      <!-- Drawer Header -->
+      <div class="drawer-header">
+        <div class="header-left">
+          <button class="btn-icon" id="btnBack">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+              <line x1="19" y1="12" x2="5" y2="12"></line>
+              <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+          </button>
+          <h2>선박</h2>
+        </div>
+        <div class="header-right">
+          <div class="time-toggle-group">
+            <button class="btn-toggle-time active" id="btnTimeKST">
+              <span class="check-mark">✓</span> 한국시간 (KST)
+            </button>
+            <button class="btn-toggle-time" id="btnTimeLocal">
+              <span class="check-mark">✓</span> 국제표준시 (UTC)
+            </button>
+          </div>
+          <button class="btn-icon-close" id="btnCloseDrawer">✕</button>
+        </div>
+      </div>
+
+      <!-- Vessel Selection & Search Bar (Clean Enterprise Header) -->
+      <div class="vessel-search-section">
+        <div class="search-input-box live-search-box">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+            <circle cx="11" cy="11" r="8"></circle>
+            <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+          </svg>
+          <input type="text" id="vesselSearchInput" placeholder="선박명/IMO 입력 또는 목록에서 선택..." value="PANCON GLORY" autocomplete="off">
+          <button class="btn-open-fleet-modal" id="btnOpenFleetModal" title="전체 선박 목록 열기">
+            선박 목록 (274) ▾
+          </button>
+          <!-- Realtime Instant Suggestions Dropdown -->
+          <div class="search-suggestions-dropdown" id="searchSuggestionsDropdown"></div>
+        </div>
+      </div>
+
+      <!-- Vessel Summary Card -->
+      <div class="vessel-summary-card">
+        <div class="summary-top">
+          <div class="vessel-naming">
+            <div class="naming-title-row">
+              <span class="label-tiny">선박명</span>
+              <button class="btn-laser-replay" id="btnLaserReplay" title="시작점부터 선박까지 레이저 항로 애니메이션 다시 재생">
+                ⚡ 레이저 빔 추적
+              </button>
+            </div>
+            <div class="title-with-badge">
+              <h1 id="vesselNameDisplay">PANCON GLORY</h1>
+              <span class="badge-status-pill" id="vesselStatusBadge">운항중</span>
+            </div>
+          </div>
+          <div class="vessel-illustration">
+            <span class="ship-emoji">🚢</span>
+          </div>
+        </div>
+
+        
+
+                <!-- Route Distinction Legend (온 길 vs 갈 길) -->
+        <div class="route-legend-pill">
+          <div class="legend-item">
+            <span class="legend-line-past"></span>
+            <span>온 길 (운항 완료)</span>
+          </div>
+          <div class="legend-item">
+            <span class="legend-line-future"></span>
+            <span>갈 길 (도착 예정)</span>
+          </div>
+        </div>
+
+
+
+        <!-- 3x2 Metadata Grid (Matching screenshot) -->
+        <div class="meta-grid">
+          <div class="meta-cell">
+            <span class="meta-label">MMSI</span>
+            <span class="meta-val" id="metaMmsi">441872000</span>
+          </div>
+          <div class="meta-cell">
+            <span class="meta-label">Call Sign</span>
+            <span class="meta-val" id="metaCallsign">DSRI4</span>
+          </div>
+          <div class="meta-cell">
+            <span class="meta-label">IMO</span>
+            <span class="meta-val" id="metaImo">9635418</span>
+          </div>
+          <div class="meta-cell">
+            <span class="meta-label">속도/방위</span>
+            <span class="meta-val" id="metaSpeedCourse">12.1 kn / 354°</span>
+          </div>
+          <div class="meta-cell">
+            <span class="meta-label">위도</span>
+            <span class="meta-val highlight" id="metaLat">34.746518</span>
+          </div>
+          <div class="meta-cell">
+            <span class="meta-label">경도</span>
+            <span class="meta-val highlight" id="metaLon">125.312675</span>
+          </div>
+        </div>
+
+        <!-- Tab Segment Header -->
+        <div class="drawer-tabs">
+          <button class="drawer-tab-btn active" id="tabRouteLog" style="width: 100%; text-align: center; font-weight: 700;">항로 로그 (Route &amp; AIS Log)</button>
+        </div>
+      </div>
+
+      <!-- Route History / Voyages List Accordion -->
+      <div class="voyages-accordion-list" id="voyagesAccordion">
+        <!-- Dynamically populated per vessel (Real verified voyages only) -->
+      </div>
+    </aside>
+
+    <!-- 3. Full Map View (Leaflet with multi-layer support) -->
+    <main class="map-container" id="mapContainer">
+      <div id="map"></div>
+
+      <!-- Floating Controls on Top-Right of Map -->
+      <div class="map-floating-top">
+        <!-- Map Style Layer Switcher -->
+        <div class="map-layer-selector">
+          <button class="layer-pill-btn active" data-layer="light">클린 라이트 (기본)</button>
+          <button class="layer-pill-btn" data-layer="ocean">🌊 해양 수심도 (Ocean)</button>
+          <button class="layer-pill-btn" data-layer="satellite">위성 사진 (Satellite)</button>
+          <button class="layer-pill-btn" data-layer="osm">일반 지도 (OSM)</button>
+        </div>
+
+        <div class="search-mini-box">
+          <input type="text" id="mapQuickSearch" placeholder="선박 검색 (pancon...)" value="pancon">
+          <span class="search-icon">🔍</span>
+        </div>
+
+        
+
+
+      </div>
+
+      <!-- Subtle bottom watermark -->
+      <div class="bottom-creator-watermark">created by KOMYUNGHEE</div>
+    </main>
+  </div>
+
+
+  <!-- Fleet Selection Modal (산만하지 않은 정갈한 선박 선택 팝업) -->
+  <div class="fleet-modal-overlay" id="fleetModalOverlay">
+    <div class="fleet-modal-container">
+      <div class="fleet-modal-header">
+        <div class="modal-title-wrap">
+          <span class="modal-icon">🚢</span>
+          <div>
+            <h3>선박 선택 (Fleet Directory)</h3>
+            <p>wherevessel 글로벌 주요 원양/근해 컨테이너선 274척 통합 관제 목록</p>
+          </div>
+        </div>
+        <button class="modal-close-btn" id="btnCloseFleetModal">✕</button>
+      </div>
+
+      <div class="fleet-modal-filter-bar">
+        <div class="modal-tab-group">
+          <button class="modal-tab-btn active" data-category="all">전체 선박 (274)</button>
+          <button class="modal-tab-btn" data-category="korea">한중일/아시아 근해 (100)</button>
+          <button class="modal-tab-btn" data-category="global">글로벌 원양/동남아 (174)</button>
+        </div>
+        <div class="modal-search-box">
+          <input type="text" id="modalVesselSearchInput" placeholder="선박명/선사/항구 검색..." autocomplete="off">
+        </div>
+      </div>
+
+      <div class="fleet-modal-body" id="fleetCardsContainer">
+        <!-- Dynamically populated fleet cards -->
+      </div>
+    </div>
+  </div>
+
+  <!-- Leaflet JS -->
+  <script src="leaflet.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>
