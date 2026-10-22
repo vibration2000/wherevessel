@@ -4,6 +4,8 @@ import json
 import os
 import random
 import time
+import hmac
+import hashlib
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 import sqlite3
@@ -19,6 +21,7 @@ lock = threading.RLock()
 vessels = json.loads((ROOT / "vessels.json").read_text(encoding="utf-8"))
 observed = {}
 feed = {"state": "awaiting_api_key", "last_received_at": None}
+last_relay_time = 0
 
 
 def rate_limit_delay(value, now=None):
@@ -96,6 +99,9 @@ def ingest(message):
 async def receive():
     from websockets.asyncio.client import connect
     key = os.environ.get("AISSTREAM_API_KEY", "").strip()
+    if os.environ.get("AIS_RECEIVER_MODE") == "relay":
+        feed["state"] = "waiting_for_relay"
+        return
     if not key or "YOUR_AISSTREAM" in key:
         return
     delay = 2
@@ -121,6 +127,22 @@ async def receive():
             response = getattr(exc, "response", None)
             status = getattr(response, "status_code", None)
             feed["last_error"] = {"type": type(exc).__name__, "http_status": status}
+            # Handshake occurs before our API key is sent. Classify the response
+            # locally; publish only a fixed diagnostic label, never its body.
+            response_body = getattr(response, "body", b"") or b""
+            if isinstance(response_body, bytes):
+                response_body = response_body.decode("utf-8", errors="replace")
+            lower_body = response_body.lower()
+            if "connection" in lower_body and ("limit" in lower_body or "many" in lower_body):
+                feed["last_error"]["reason"] = "upstream_connection_limit"
+            elif "rate" in lower_body or "too many requests" in lower_body:
+                feed["last_error"]["reason"] = "upstream_request_limit"
+            elif "cloudflare" in lower_body:
+                feed["last_error"]["reason"] = "upstream_edge_rejection"
+            else:
+                feed["last_error"]["reason"] = "upstream_handshake_rejection"
+            if response is not None:
+                feed["last_error"]["retry_after"] = getattr(response, "headers", {}).get("Retry-After")
             print("AIS reconnect:", type(exc).__name__, "HTTP", status, flush=True)
             feed["state"] = "reconnecting"
             if status == 429:
@@ -167,6 +189,37 @@ class Handler(SimpleHTTPRequestHandler):
             self.send_error(404)
 
     def do_POST(self):
+        global last_relay_time
+        if urlsplit(self.path).path == "/api/relay":
+            try:
+                length = int(self.headers.get("Content-Length", "0"))
+                stamp = int(self.headers.get("X-AIS-Time", "0"))
+                if not 0 < length <= 2000000 or abs(time.time() - stamp) > 120:
+                    raise ValueError()
+                payload = self.rfile.read(length)
+                key = os.environ.get("AISSTREAM_API_KEY", "")
+                expected = hmac.new(key.encode(), str(stamp).encode() + b"." + payload, hashlib.sha256).hexdigest()
+                if not key or not hmac.compare_digest(expected, self.headers.get("X-AIS-Signature", "")):
+                    self.reply(403, {"success": False})
+                    return
+                records = json.loads(payload)
+                if not isinstance(records, list) or len(records) > 1000:
+                    raise ValueError()
+                if any(not isinstance(record, dict) or not isinstance(record.get("MetaData"), dict)
+                       or not isinstance(record.get("Message"), dict) for record in records):
+                    raise ValueError()
+                with lock:
+                    if stamp <= last_relay_time:
+                        self.reply(409, {"success": False})
+                        return
+                    for record in records:
+                        ingest(record)
+                    last_relay_time = stamp
+                    feed["receiver"] = "local_relay"
+                self.reply(200, {"success": True, "accepted": len(records)})
+            except (ValueError, TypeError, OverflowError):
+                self.reply(400, {"success": False})
+            return
         if urlsplit(self.path).path != "/api/add-vessel":
             self.send_error(404)
             return

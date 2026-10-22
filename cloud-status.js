@@ -17,6 +17,7 @@
       const { ais } = await response.json();
       const messages = {
         awaiting_api_key: 'AIS 키 설정 대기 · 현재 위치는 저장 데이터입니다.',
+        waiting_for_relay: '실제 AIS 중계 연결 대기 · 현재 위치는 저장 데이터입니다.',
         connecting: 'AIS 제공 서버 연결 중 · 현재 위치는 저장 데이터입니다.',
         connected_waiting_for_reports: 'AIS 연결됨 · 실제 선박 보고 수신을 기다리고 있습니다.',
         reconnecting: 'AIS 연결 끊김 · 마지막 저장 데이터를 표시합니다.',

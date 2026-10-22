@@ -1,5 +1,6 @@
 # Local credentials and environment
 aisstream_config.json
+.aisstream-key.bin
 .env
 .env.*
 !.env.example
