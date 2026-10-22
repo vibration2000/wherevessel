@@ -6,6 +6,7 @@ import random
 import time
 import hmac
 import hashlib
+import base64
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 import sqlite3
@@ -214,12 +215,23 @@ class Handler(SimpleHTTPRequestHandler):
                     raise ValueError()
                 payload = self.rfile.read(length)
                 device = self.headers.get("X-AIS-Device", "owner")
-                if device == "owner":
+                signed = str(stamp).encode() + b"." + payload
+                valid = False
+                if device != "owner" and self.headers.get("X-AIS-Auth") == "rsa-sha256":
+                    import rsa
+                    parameters = json.loads(os.environ.get("AIS_RELAY_PUBLIC_KEYS", "{}")).get(device)
+                    if parameters:
+                        try:
+                            public = rsa.PublicKey(int.from_bytes(base64.b64decode(parameters["Modulus"]), "big"), int.from_bytes(base64.b64decode(parameters["Exponent"]), "big"))
+                            rsa.verify(signed, base64.b64decode(self.headers.get("X-AIS-Signature", ""), validate=True), public)
+                            valid = True
+                        except (rsa.VerificationError, ValueError, TypeError):
+                            pass
+                elif device == "owner":
                     key = os.environ.get("AISSTREAM_API_KEY", "")
-                else:
-                    key = json.loads(os.environ.get("AIS_RELAY_TOKENS", "{}")).get(device, "")
-                expected = hmac.new(key.encode(), str(stamp).encode() + b"." + payload, hashlib.sha256).hexdigest()
-                if not key or not hmac.compare_digest(expected, self.headers.get("X-AIS-Signature", "")):
+                    expected = hmac.new(key.encode(), signed, hashlib.sha256).hexdigest()
+                    valid = bool(key) and hmac.compare_digest(expected, self.headers.get("X-AIS-Signature", ""))
+                if not valid:
                     self.reply(403, {"success": False})
                     return
                 records = json.loads(payload)

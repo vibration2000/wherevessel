@@ -2,6 +2,7 @@
 import asyncio
 import hashlib
 import hmac
+import base64
 import json
 import os
 from pathlib import Path
@@ -54,14 +55,21 @@ def load_key():
     return load_settings()["api_key"]
 
 
-def send_batch(key, records, device_id="owner"):
+def send_batch(key, records, device_id="owner", private_parameters=None):
     payload = json.dumps(records, separators=(",", ":")).encode()
     stamp = str(int(time.time()))
     signature = hmac.new(key.encode(), stamp.encode() + b"." + payload, hashlib.sha256).hexdigest()
+    headers = {"Content-Type": "application/json", "X-AIS-Time": stamp,
+               "X-AIS-Signature": signature, "X-AIS-Device": device_id}
+    if private_parameters:
+        import rsa
+        values = [int.from_bytes(base64.b64decode(private_parameters[field]), "big") for field in ("Modulus", "Exponent", "D", "P", "Q")]
+        private = rsa.PrivateKey(*values)
+        headers["X-AIS-Signature"] = base64.b64encode(rsa.sign(stamp.encode() + b"." + payload, private, "SHA-256")).decode()
+        headers["X-AIS-Auth"] = "rsa-sha256"
     request = urllib.request.Request(
         os.environ.get("AIS_RELAY_URL", "https://wherevessel-live.onrender.com") + "/api/relay",
-        data=payload, headers={"Content-Type": "application/json", "X-AIS-Time": stamp,
-                               "X-AIS-Signature": signature, "X-AIS-Device": device_id})
+        data=payload, headers=headers)
     with urllib.request.urlopen(request, timeout=20) as response:
         result = json.load(response)
     print("Real AIS messages delivered:", result.get("accepted", 0), flush=True)
@@ -82,7 +90,7 @@ async def run():
             batch = dict(pending)
             pending.clear()
             try:
-                await asyncio.to_thread(send_batch, signing_key, list(batch.values()), device_id)
+                await asyncio.to_thread(send_batch, signing_key, list(batch.values()), device_id, settings.get("relay_private_key"))
             except Exception as exc:
                 # Keep newest observations when HTTPS delivery is temporarily unavailable.
                 for identity, record in batch.items():

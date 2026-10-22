@@ -8,14 +8,14 @@ Python 3.13.17 x64와 websockets 15.0.1 및 AIS 중계 모듈을 함께 설치�
 기존 Python이나 관리자 권한이 필요하지 않습니다.
 
 일반 웹 조회는 키 없이 사용합니다. 중계를 활성화하려는 사용자는 본인의
-AISStream 키와 관리자가 발급한 개인별 `wv1.…` 중계 코드를 입력합니다.
+AISStream 키와 관리자가 발급한 개인별 `wv2.…` 중계 파일을 입력합니다.
 다른 사람의 AIS 키는 설치 파일에 포함되지 않습니다. 중계 설정은 Windows
 DPAPI로 암호화하며, 로그인 자동 시작은 설치 화면에서 선택할 수 있습니다.
 
 관리자 중계 코드 발급: `installer/create-invite.ps1 -Name user-name`.
-생성된 `relay-admin-tokens.json`은 Render의 `AIS_RELAY_TOKENS` 비밀 환경변수에
-반영합니다. 개인별 `.wvrelay` 파일만 해당 사용자에게 별도로 전달하며,
-이 파일이나 관리자 토큰 목록을 공개 배포 ZIP 또는 GitHub에 올리지 않습니다.
+생성된 `relay-public-keys.json`은 Render의 `AIS_RELAY_PUBLIC_KEYS` 환경변수에
+반영합니다. 여기에는 RSA 검증용 공개키만 들어갑니다. 개인별 `.wvrelay` 파일은
+해당 사용자에게 별도로 전달하며 공개 배포 ZIP 또는 GitHub에 올리지 않습니다.
 
 설치 프로그램 소스: `installer/Setup.cs`. 빌드: `installer/build.ps1`.
 사용자 안내: `installer/USER-GUIDE.txt`.
