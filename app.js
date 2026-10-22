@@ -21630,6 +21630,9 @@ function updateLiveVesselUI(vessel) {
   const elLat = document.getElementById("infoLat");
   const elLon = document.getElementById("infoLon");
   const elSpeed = document.getElementById("infoSpeed");
+  document.getElementById("metaLat").textContent = Number(vessel.lat).toFixed(6);
+  document.getElementById("metaLon").textContent = Number(vessel.lon).toFixed(6);
+  document.getElementById("metaSpeedCourse").textContent = `${vessel.speed} / ${String(vessel.heading).padStart(3, '0')}°`;
   if (elLat) elLat.textContent = Number(vessel.lat).toFixed(6);
   if (elLon) elLon.textContent = Number(vessel.lon).toFixed(6);
   if (elSpeed) elSpeed.textContent = vessel.speed;
@@ -21642,6 +21645,7 @@ function updateLiveVesselUI(vessel) {
 }
 
 // Auto-Poll vessels.json for real-time AIS updates from aisstream_service.py
+let cloudLiveInitialSelection = false;
 async function pollLiveVesselsData() {
   try {
     const res = await fetch(`vessels.json?_t=${Date.now()}`);
@@ -21650,6 +21654,7 @@ async function pollLiveVesselsData() {
     if (!Array.isArray(freshList) || freshList.length === 0) return;
 
     let currentChanged = false;
+    let catalogueChanged = false;
     freshList.forEach(freshV => {
       const idx = VESSEL_DATABASE.findIndex(v => v.id === freshV.id || v.mmsi === freshV.mmsi);
       if (idx !== -1) {
@@ -21663,8 +21668,21 @@ async function pollLiveVesselsData() {
             currentChanged = true;
           }
         }
+      } else {
+        VESSEL_DATABASE.unshift(freshV);
+        catalogueChanged = true;
       }
     });
+
+    if (catalogueChanged) updateVesselCountsUI(VESSEL_DATABASE.length);
+    if (!cloudLiveInitialSelection && location.hostname.endsWith('.onrender.com')) {
+      const actual = freshList.find(v => v.source === 'aisstream' && v.logs?.length);
+      if (actual) {
+        cloudLiveInitialSelection = true;
+        loadVessel(actual.id, true);
+        currentChanged = false;
+      }
+    }
 
     if (currentChanged && currentVessel) {
       updateLiveVesselUI(currentVessel);

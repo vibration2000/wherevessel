@@ -44,6 +44,21 @@ def database():
     return conn
 
 
+def live_vessel(actual):
+    return dict(actual, id="ais-" + actual["mmsi"], category="global",
+        name=actual.get("name") or actual["mmsi"], carrier="AIS 수신 선박",
+        koreanName=actual.get("name", ""), status="AIS 수신", origin="미확인",
+        destination=actual.get("destination") or "미확인", area="AIS 수신 위치",
+        callsign=actual.get("callsign", "미확인"), imo=actual.get("imo", "미확인"),
+        mapCenter=[actual["lat"], actual["lon"]], mapZoom=8,
+        routeWaypoints=[[actual["lat"], actual["lon"]]], arrowNodes=[], logs=[], voyageHistory=[])
+
+
+def ais_text(value):
+    # Vessel-provided text is rendered by legacy HTML templates.
+    return "".join(c for c in str(value) if c not in '<>&"\'' and c.isprintable()).strip(" @")[:100]
+
+
 def ingest(message):
     meta = message.get("MetaData", {})
     mmsi = str(meta.get("MMSI", ""))
@@ -54,15 +69,15 @@ def ingest(message):
     static = body.get("ShipStaticData", {})
     with lock:
         item = observed.setdefault(mmsi, {"mmsi": mmsi})
-        name = str(meta.get("ShipName") or static.get("Name") or "").strip(" @")
+        name = ais_text(meta.get("ShipName") or static.get("Name") or "")
         if name:
             item["name"] = name
         if static.get("ImoNumber"):
             item["imo"] = str(static["ImoNumber"])
         if static.get("CallSign"):
-            item["callsign"] = str(static["CallSign"]).strip(" @")
+            item["callsign"] = ais_text(static["CallSign"])
         if static.get("Destination"):
-            item["destination"] = str(static["Destination"]).strip(" @")
+            item["destination"] = ais_text(static["Destination"])
         if pos:
             if pos.get("Valid") is False:
                 return
@@ -82,6 +97,8 @@ def ingest(message):
             feed.update(state="receiving", last_received_at=timestamp)
             feed.pop("last_error", None)
             feed.pop("next_retry_at", None)
+            if not any(str(v.get("mmsi")) == mmsi for v in vessels) and len(vessels) < 774:
+                vessels.insert(0, live_vessel(item))
         for vessel in vessels:
             if str(vessel.get("mmsi")) == mmsi and "lat" in item:
                 vessel.update(item)
@@ -249,12 +266,7 @@ class Handler(SimpleHTTPRequestHandler):
             if len(vessels) >= 5000:
                 self.reply(429, {"success": False, "error": "등록 가능한 선박 수에 도달했습니다."})
                 return
-            vessel = dict(actual, id="ais-" + actual["mmsi"], category="global",
-                name=actual.get("name") or actual["mmsi"], carrier="AIS 수신 선박",
-                koreanName=actual.get("name", ""), status="AIS 수신", origin="미확인",
-                destination=actual.get("destination") or "미확인", area="AIS 수신 위치",
-                mapCenter=[actual["lat"], actual["lon"]], mapZoom=8,
-                routeWaypoints=[[actual["lat"], actual["lon"]]], logs=[], voyageHistory=[])
+            vessel = live_vessel(actual)
             with database() as db:
                 db.execute("INSERT OR REPLACE INTO vessels VALUES (?, ?)",
                     (actual["mmsi"], json.dumps(vessel)))

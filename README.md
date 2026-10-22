@@ -2,6 +2,17 @@
 
 ## 클라우드 서버 배포
 
+현재 실행 주소는 https://wherevessel-live.onrender.com 입니다.
+Render의 `AIS_RECEIVER_MODE=relay` 설정에서는 직접 AIS 연결을 만들지 않습니다.
+사용자 PC의 `ais_relay.py`가 단일 실제 AIS 연결을 유지하고, 수신한 메시지를
+HMAC 서명과 시각 검증을 거쳐 공개 서버로 전달합니다. PC가 꺼지거나 네트워크가
+끊기면 갱신도 멈춥니다. 수신된 선박은 목록에 자동 반영되며, 저장된 예제 선박이
+모두 실시간으로 추적된다는 뜻은 아닙니다.
+
+중계 실행: `python ais_relay.py` (의존성: `pip install -r requirements.txt`).
+키는 `AISSTREAM_API_KEY` 환경변수 또는 Windows 사용자 DPAPI로 보호한
+`.aisstream-key.bin`에서 읽습니다. 이 파일은 Git 업로드에서 제외됩니다.
+
 `Dockerfile`과 `render.yaml`은 `cloud_server.py`를 실행합니다. Render에서 이 저장소로
 Blueprint를 생성하고 비밀 환경변수 `AISSTREAM_API_KEY`를 설정합니다. API 키를
 GitHub 파일에 적지 마세요. 서버가 발급하는 HTTPS 주소에서 앱 전체를 이용합니다.
