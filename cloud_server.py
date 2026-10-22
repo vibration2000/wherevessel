@@ -2,6 +2,9 @@
 import asyncio
 import json
 import os
+import random
+import time
+from email.utils import parsedate_to_datetime
 from pathlib import Path
 import sqlite3
 import threading
@@ -11,11 +14,24 @@ from urllib.parse import urlsplit
 
 ROOT = Path(__file__).resolve().parent
 DATA = Path(os.environ.get("DATA_DIR", "/tmp/wherevessel"))
-ASSETS = {"index.html", "app.js", "style.css", "leaflet.js", "leaflet.css", "splash_image.jpg"}
+ASSETS = {"index.html", "app.js", "cloud-status.js", "style.css", "leaflet.js", "leaflet.css", "splash_image.jpg"}
 lock = threading.RLock()
 vessels = json.loads((ROOT / "vessels.json").read_text(encoding="utf-8"))
 observed = {}
 feed = {"state": "awaiting_api_key", "last_received_at": None}
+
+
+def rate_limit_delay(value, now=None):
+    """Respect Retry-After seconds or HTTP dates; wait five minutes if absent."""
+    now = time.time() if now is None else now
+    try:
+        seconds = float(value)
+    except (ValueError, TypeError):
+        try:
+            seconds = parsedate_to_datetime(value).timestamp() - now
+        except (ValueError, TypeError, AttributeError, OverflowError):
+            seconds = 300
+    return max(60, seconds)
 
 
 def database():
@@ -61,6 +77,8 @@ def ingest(message):
             item.update(lat=lat, lon=lon, speed=f"{speed:.1f} kn", heading=heading,
                         source="aisstream", receivedAt=timestamp)
             feed.update(state="receiving", last_received_at=timestamp)
+            feed.pop("last_error", None)
+            feed.pop("next_retry_at", None)
         for vessel in vessels:
             if str(vessel.get("mmsi")) == mmsi and "lat" in item:
                 vessel.update(item)
@@ -82,8 +100,10 @@ async def receive():
         return
     delay = 2
     while True:
+        wait = delay
         try:
             feed["state"] = "connecting"
+            feed.pop("next_retry_at", None)
             async with connect("wss://stream.aisstream.io/v0/stream", ping_interval=20) as ws:
                 await ws.send(json.dumps({"APIKey": key,
                     "BoundingBoxes": [[[-90, -180], [90, 180]]],
@@ -103,7 +123,12 @@ async def receive():
             feed["last_error"] = {"type": type(exc).__name__, "http_status": status}
             print("AIS reconnect:", type(exc).__name__, "HTTP", status, flush=True)
             feed["state"] = "reconnecting"
-        await asyncio.sleep(delay)
+            if status == 429:
+                retry_after = getattr(response, "headers", {}).get("Retry-After")
+                wait = rate_limit_delay(retry_after) + random.uniform(1, 10)
+                feed["state"] = "rate_limited"
+        feed["next_retry_at"] = datetime.fromtimestamp(time.time() + wait, timezone.utc).isoformat()
+        await asyncio.sleep(wait)
         delay = min(delay * 2, 60)
 
 
