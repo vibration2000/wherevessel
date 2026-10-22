@@ -1,0 +1,6 @@
+.git
+.env*
+aisstream_config.json
+__pycache__
+*.log
+*.zip
