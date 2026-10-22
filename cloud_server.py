@@ -97,8 +97,11 @@ async def receive():
                         break
                     ingest(message)
         except Exception as exc:
-            # Log only the exception class, never credentials or upstream payloads.
-            print("AIS reconnect:", type(exc).__name__, flush=True)
+            # Expose only safe protocol diagnostics, never secrets or response bodies.
+            response = getattr(exc, "response", None)
+            status = getattr(response, "status_code", None)
+            feed["last_error"] = {"type": type(exc).__name__, "http_status": status}
+            print("AIS reconnect:", type(exc).__name__, "HTTP", status, flush=True)
             feed["state"] = "reconnecting"
         await asyncio.sleep(delay)
         delay = min(delay * 2, 60)
