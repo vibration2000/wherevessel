@@ -1,84 +1,34 @@
-# TRADLINX Ocean Visibility 스타일 선박 트래킹 시스템
+# wherevessel — 한 척 중심 선박 검색
 
-## Windows 신규 사용자 설치
+선박명 또는 IMO·MMSI로 요청한 한 척의 공개 자료를 조회합니다. 기존 274척 자료는 이름 제안만 남겼으며 좌표·제원은 검색 결과로 사용하지 않습니다.
 
-`dist/wherevessel-Setup.exe` 또는 배포 ZIP의 같은 파일을 실행합니다.
-바탕화면 바로가기는 https://wherevessel-live.onrender.com/ 을 엽니다.
-Python 3.13.17 x64와 websockets 15.0.1 및 AIS 중계 모듈을 함께 설치하며,
-기존 Python이나 관리자 권한이 필요하지 않습니다.
+## 실행
 
-일반 웹 조회는 키 없이 사용합니다. 중계를 활성화하려는 사용자는 본인의
-AISStream 키와 관리자가 발급한 개인별 `wv2.…` 중계 파일을 입력합니다.
-다른 사람의 AIS 키는 설치 파일에 포함되지 않습니다. 중계 설정은 Windows
-DPAPI로 암호화하며, 로그인 자동 시작은 설치 화면에서 선택할 수 있습니다.
+Python 3.12 이상에서 `python server.py`를 실행하고 http://localhost:3000/ 을 엽니다. 로컬 `start.bat`와 `wherevessel.bat`도 같은 화면을 엽니다. AIS 수신기는 자동 시작하지 않습니다. 공개 웹 바로가기의 Render 배포본은 로컬 수정만으로 갱신되지 않습니다.
 
-관리자 중계 코드 발급: `installer/create-invite.ps1 -Name user-name`.
-생성된 `relay-public-keys.json`은 Render의 `AIS_RELAY_PUBLIC_KEYS` 환경변수에
-반영합니다. 여기에는 RSA 검증용 공개키만 들어갑니다. 개인별 `.wvrelay` 파일은
-해당 사용자에게 별도로 전달하며 공개 배포 ZIP 또는 GitHub에 올리지 않습니다.
+## 정보와 한계
 
-설치 프로그램 소스: `installer/Setup.cs`. 빌드: `installer/build.ps1`.
-사용자 안내: `installer/USER-GUIDE.txt`.
+- `/api/search-vessel?q=PANCON%20GLORY`: API 키 없는 공개 웹 자료 수집. 접근 규칙·출처 실패를 처리하며 대체 출처를 탐색합니다.
+- 이름이 모호하면 후보를 선택합니다. 기존 목록 밖의 이름과 IMO도 조회할 수 있습니다.
+- 각 항목에 원문 링크, 보고 시각을 표시합니다. 조회 시각과 관측 시각은 다릅니다. 단일 출처 보고는 독립 대조 완료로 표시하지 않습니다.
+- 정확한 좌표와 관측 시각을 확보하지 못하면 지도에 마커나 항로를 만들지 않습니다. 공개 페이지의 반올림된 지도 좌표를 실제 선박 좌표로 쓰지 않습니다.
+- 사이트 접근 차단·구조 변경·통신 실패로 일부 또는 전체 조회가 실패할 수 있습니다. API 없는 모든 선박의 최신 위치를 보장하지 않습니다.
+- 60초 캐시, 3개 동시 외부 조회 제한. 다른 선박 조회·중지 시 이전 응답의 화면 반영을 막습니다. 클라이언트 중지는 서버의 진행 중 HTTP 요청을 즉시 중단하지는 않습니다.
+- 예전 소스·상세 데이터는 `.amo/single-vessel/before/`에 복구용으로 보관하고 HTTP에서는 차단합니다. 기존 AIS 중계 서비스 파일은 별도 용도로 보존합니다.
 
-## 클라우드 서버 배포
+## 검증
 
-현재 실행 주소는 https://wherevessel-live.onrender.com 입니다.
-Render의 `AIS_RECEIVER_MODE=relay` 설정에서는 직접 AIS 연결을 만들지 않습니다.
-사용자 PC의 `ais_relay.py`가 단일 실제 AIS 연결을 유지하고, 수신한 메시지를
-HMAC 서명과 시각 검증을 거쳐 공개 서버로 전달합니다. PC가 꺼지거나 네트워크가
-끊기면 갱신도 멈춥니다. 수신된 선박은 목록에 자동 반영되며, 저장된 예제 선박이
-모두 실시간으로 추적된다는 뜻은 아닙니다.
+`python -m unittest discover -s tests -p test_vessel_search.py`
 
-중계 실행: `python ais_relay.py` (의존성: `pip install -r requirements.txt`).
-키는 `AISSTREAM_API_KEY` 환경변수 또는 Windows 사용자 DPAPI로 보호한
-`.aisstream-key.bin`에서 읽습니다. 이 파일은 Git 업로드에서 제외됩니다.
+`python -m unittest discover -s tests -p test_single_vessel_http.py`
 
-`Dockerfile`과 `render.yaml`은 `cloud_server.py`를 실행합니다. Render에서 이 저장소로
-Blueprint를 생성하고 비밀 환경변수 `AISSTREAM_API_KEY`를 설정합니다. API 키를
-GitHub 파일에 적지 마세요. 서버가 발급하는 HTTPS 주소에서 앱 전체를 이용합니다.
-기존 GitHub Pages 주소는 서버를 실행하지 않는 저장 데이터 조회용입니다.
+`node tests/check_single_vessel.cjs`
 
-클라우드 서버는 실제 수신한 AIS 위치만 갱신합니다. 선박명 또는 MMSI 등록은
-서버가 실제 위치를 수신한 선박에 한해 가능합니다. 수신 전에는 등록 실패를
-표시하며 임의의 좌표나 식별번호를 만들지 않습니다. `/api/status`에서 수신 상태와
-마지막 수신 시각을 확인할 수 있습니다. 기존 선박 데이터는 AIS 수신 전까지
-저장된 예제 데이터이며, 화면의 기존 LIVE 표시는 실제 수신의 증거가 아닙니다.
+기존 전체 선박 UI 검사는 교체된 화면의 완료 근거로 사용하지 않습니다. 실제 수집 결과는 `.amo/single-vessel-live-results.json`, 통합 결과는 `.amo/single-vessel/REPORT.md`를 확인하세요.
+## 공개 원문 확장 (2026-10-26)
 
-기본 배포 설정은 무료 인스턴스입니다. 유휴 시 중지될 수 있어 연속 수신을
-보장하지 않습니다. 등록 목록은 기본 임시 디스크에 저장되어 재배포 시 사라질 수
-있습니다. 상시 운영에는 상시 실행 인스턴스와 영구 디스크가 필요하며,
-영구 디스크 경로를 `DATA_DIR`로 설정해야 합니다.
+Shyppy의 보이는 소수 좌표와 절대 관측 시각을 IMO·MMSI·선명과 대조한 경우 보고 위치로 표시합니다. 관측이 오래되면 과거 보고임을 표시하며 측위 정확도·실제 현재 위치를 보장하지 않습니다. VesselFinder의 지도 중심 정수 좌표는 사용하지 않습니다.
 
-## 로컬 실행
+공개 검색엔진으로 원문 URL을 발굴하고, 검토된 출처 URL을 보조 경로로 사용합니다. 검색 요약은 사실로 표시하지 않습니다. HTML·동적 브라우저·PDF 텍스트 수집은 원문 식별자를 확인한 발췌와 페이지를 제공합니다. 검색엔진 접근 제한, robots 거부, 브라우저 부재, PDF 실패는 오류로 남깁니다. 백과 기록의 전장·폭은 같은 단위의 공개 제원과 비교해 일치·충돌을 보존합니다. 식별자 일치는 AIS 원자료의 독립 검증을 뜻하지 않습니다.
 
-Python이 설치된 Windows에서 `wherevessel.bat`를 실행합니다.
-실시간 AIS를 사용하려면 `aisstream_config.example.json`을
-`aisstream_config.json`으로 복사하고 본인의 AISStream API 키를 입력합니다.
-개인 API 키가 포함된 설정 파일은 Git 업로드에서 제외됩니다.
-
-
-트래드링스(TRADLINX) 오션 비저빌리티의 UI 레이아웃과 데이터 표시 형식을 동일하게 구현하고, 동적 선박 검색 및 레이저 항로 애니메이션 엔진을 탑재한 실시간 선박 관제 시스템입니다.
-
----
-
-## 🔍 1. 선박 검색 및 다중 선박 조회
-* **선박명 / IMO / MMSI 검색창**:
-  - `PANCON GLORY` (상하이 ➔ 서해 ➔ 인천)
-  - `HMM GDANSK` (싱가포르 ➔ 대만해협 ➔ 부산신항)
-  - `SM BUSAN` (태평양 ➔ 대한해협 ➔ 부산항)
-  - `EVER GIVEN` (함부르크 ➔ 인도양 ➔ 닝보)
-* **빠른 원클릭 칩**: 상단 칩 클릭 시 즉시 해당 선박으로 스위칭 및 해당 해역으로 자동 이동
-
----
-
-## ⚡ 2. 레이저 항로 모션 이벤트 (Laser Route Motion)
-* **드로잉 레이저 빔**: 출발항에서 현재 선박 위치까지 네온 시안 레이저 광선이 `쭈욱~~` 뻗어나가는 동적 인트로 애니메이션
-* **레이더 핑 펄스**: 선박 위치 도달 시 선박 마커 주변으로 레이저 파동 링 발생
-* **연속 레이저 스트림**: 시작점부터 선박 위치까지 네온 펄스 광선이 끊임없이 흘러가며 이동 중인 상태를 실시간 연출
-* **리플레이 버튼**: 선박명 옆 `⚡ 레이저 빔 추적` 버튼으로 언제든 레이저 모션 재생 가능
-
----
-
-## 🗺️ 3. 무료 지도 타일 및 외부 지도
-* **내장 지도 4종 (API Key 불필요 / 100% 무료)**: 클린 라이트(Esri), 해양 수심도(Ocean), 위성 사진(Satellite), 일반 지도(OSM)
-* **외부 지도 바로보기**: 카카오맵, 네이버 지도, OpenStreetMap, MarineTraffic 다이렉트 연동
+확장 의존성 설치: `python -m pip install -r requirements.txt`, 동적 문서용 `python -m playwright install chromium`. Docker는 Chromium과 필요한 OS 의존성을 포함합니다. 같은 선박의 동시 요청은 병합하고 조회별 request_id를 제공합니다. 이전 요청 취소 후 응답 혼입을 차단합니다.

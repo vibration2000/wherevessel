@@ -7,13 +7,14 @@ import time
 import hmac
 import hashlib
 import base64
+import math
 from email.utils import parsedate_to_datetime
 from pathlib import Path
 import sqlite3
 import threading
 from datetime import datetime, timezone
 from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
-from urllib.parse import urlsplit
+from urllib.parse import urlsplit, parse_qs
 
 ROOT = Path(__file__).resolve().parent
 DATA = Path(os.environ.get("DATA_DIR", "/tmp/wherevessel"))
@@ -23,6 +24,21 @@ vessels = json.loads((ROOT / "vessels.json").read_text(encoding="utf-8"))
 observed = {}
 feed = {"state": "awaiting_api_key", "last_received_at": None}
 last_relay_times = {}
+last_position_received = None
+search_slots = threading.BoundedSemaphore(3)
+
+
+def feed_status(now=None):
+    """A connected relay is not evidence of a recent, valid position report."""
+    now = time.time() if now is None else now
+    with lock:
+        status = dict(feed)
+        if last_position_received is not None:
+            age = max(0, now - last_position_received)
+            status["age_seconds"] = round(age)
+            if status["state"] == "receiving" and age > 120:
+                status["state"] = "stale"
+        return status
 
 
 def rate_limit_delay(value, now=None):
@@ -60,7 +76,22 @@ def ais_text(value):
     return "".join(c for c in str(value) if c not in '<>&"\'' and c.isprintable()).strip(" @")[:100]
 
 
+def observation_time(value):
+    """Parse timezone-bearing ISO/AIS timestamps without inventing observation time."""
+    if not isinstance(value, str):
+        return None
+    value = value.strip()
+    if value.endswith(" UTC"):
+        value = value[:-4].rstrip()
+    try:
+        stamp = datetime.fromisoformat(value.replace("Z", "+00:00"))
+        return stamp.astimezone(timezone.utc) if stamp.tzinfo is not None else None
+    except (ValueError, OverflowError):
+        return None
+
+
 def ingest(message):
+    global last_position_received
     meta = message.get("MetaData", {})
     mmsi = str(meta.get("MMSI", ""))
     if not mmsi.isdigit() or len(mmsi) != 9:
@@ -69,7 +100,17 @@ def ingest(message):
     pos = body.get("PositionReport") or body.get("StandardClassBPositionReport")
     static = body.get("ShipStaticData", {})
     with lock:
+        # Disk-loaded vessels and evicted observations still define the latest
+        # accepted position. Never compare against saved example provenance.
+        existing = next((v for v in vessels if str(v.get("mmsi")) == mmsi
+                         and v.get("source") == "aisstream"), {})
         item = observed.setdefault(mmsi, {"mmsi": mmsi})
+        existing_time = observation_time(existing.get("receivedAt"))
+        item_time = observation_time(item.get("receivedAt"))
+        if "lat" in existing and ("lat" not in item or
+                (existing_time is not None and (item_time is None or existing_time > item_time))):
+            item.update({key: existing[key] for key in
+                         ("lat", "lon", "speed", "heading", "source", "receivedAt") if key in existing})
         name = ais_text(meta.get("ShipName") or static.get("Name") or "")
         if name:
             item["name"] = name
@@ -79,22 +120,32 @@ def ingest(message):
             item["callsign"] = ais_text(static["CallSign"])
         if static.get("Destination"):
             item["destination"] = ais_text(static["Destination"])
+        accepted_position = False
         if pos:
-            if pos.get("Valid") is False:
-                return
             lat = pos.get("Latitude", meta.get("Latitude", meta.get("latitude")))
             lon = pos.get("Longitude", meta.get("Longitude", meta.get("longitude")))
-            if not isinstance(lat, (int, float)) or not isinstance(lon, (int, float)):
-                return
-            if not (-90 <= lat <= 90 and -180 <= lon <= 180):
-                return
-            timestamp = str(meta.get("time_utc") or datetime.now(timezone.utc).isoformat())
-            speed = pos.get("Sog", 0)
-            heading = pos.get("TrueHeading", 511)
-            if heading == 511:
-                heading = pos.get("Cog", 0)
-            item.update(lat=lat, lon=lon, speed=f"{speed:.1f} kn", heading=heading,
+            timestamp = meta.get("time_utc")
+            stamp = observation_time(timestamp)
+            previous = [observation_time(record.get("receivedAt")) for record in (item, existing)]
+            latest = max((value for value in previous if value is not None), default=None)
+            # Equal timestamps are first-wins, including conflicting coordinates.
+            # Missing/invalid times cannot establish order and are not positions.
+            accepted_position = (pos.get("Valid") is not False and stamp is not None
+                and (latest is None or stamp > latest)
+                and type(lat) in (int, float) and type(lon) in (int, float)
+                and math.isfinite(lat) and math.isfinite(lon)
+                and -90 <= lat <= 90 and -180 <= lon <= 180)
+        if accepted_position:
+            speed = pos.get("Sog")
+            valid_speed = type(speed) in (int, float) and math.isfinite(speed) and 0 <= speed < 102.3
+            heading = pos.get("TrueHeading")
+            if type(heading) not in (int, float) or not math.isfinite(heading) or not 0 <= heading < 360:
+                heading = pos.get("Cog")
+            if type(heading) not in (int, float) or not math.isfinite(heading) or not 0 <= heading < 360:
+                heading = None
+            item.update(lat=lat, lon=lon, speed=f"{speed:.1f} kn" if valid_speed else "수신되지 않음", heading=heading,
                         source="aisstream", receivedAt=timestamp)
+            last_position_received = time.time()
             feed.update(state="receiving", last_received_at=timestamp)
             feed.pop("last_error", None)
             feed.pop("next_retry_at", None)
@@ -102,12 +153,16 @@ def ingest(message):
                 vessels.insert(0, live_vessel(item))
         for vessel in vessels:
             if str(vessel.get("mmsi")) == mmsi and "lat" in item:
+                if vessel.get("source") != "aisstream":
+                    # A saved example must never become an observed historical track.
+                    vessel.update(logs=[], voyageHistory=[], routeWaypoints=[], arrowNodes=[],
+                                  origin="미확인", destination="미확인", callsign="미확인", imo="미확인")
                 vessel.update(item)
-                if pos:
+                if accepted_position:
                     vessel.setdefault("logs", []).insert(0, {
                         "lat": f"{item['lat']:.3f}", "lon": f"{item['lon']:.3f}",
                         "speed": item["speed"], "status": "AIS 수신 (UTC)",
-                        "time": item["receivedAt"][:16].replace("T", " ")})
+                        "time": item["receivedAt"], "source": "aisstream"})
                     vessel["logs"] = vessel["logs"][:30]
         # Bound memory even when subscribing to worldwide observations.
         if len(observed) > 50000:
@@ -193,20 +248,63 @@ class Handler(SimpleHTTPRequestHandler):
 
     def do_GET(self):
         path = urlsplit(self.path).path
-        if path in ("/api/health", "/api/status"):
-            self.reply(200, {"success": True, "ais": dict(feed),
-                             "data_note": "Only source=aisstream positions are live; other records are saved snapshots."})
+        if path == "/api/search-vessel":
+            query = parse_qs(urlsplit(self.path).query, keep_blank_values=True)
+            values = query.get("q", [])
+            if (set(query) != {"q"} or len(values) != 1 or len(self.path) > 1200
+                    or not 2 <= len(values[0].strip()) <= 80
+                    or any(ord(c) < 32 for c in values[0])):
+                self.reply(400, {"error": "선박명 또는 IMO·MMSI를 2~80자로 입력하세요."})
+                return
+            if not search_slots.acquire(blocking=False):
+                self.reply(429, {"error": "조회가 진행 중입니다. 잠시 후 다시 시도하세요."})
+                return
+            try:
+                from vessel_search import search_vessel
+                self.reply(200, search_vessel(values[0].strip()))
+            except Exception:
+                self.reply(502, {"error": "공개 선박 자료를 조회하지 못했습니다. 잠시 후 다시 시도하세요."})
+            finally:
+                search_slots.release()
+            return
+        if path == "/api/vessel-position":
+            from marinetraffic_service import vessel_position_from_query
+            if len(self.path) > 256:
+                self.reply(400, {"success": False, "provider": "marinetraffic", "state": "invalid_request",
+                                 "error": "9자리 MMSI 한 개로 조회하세요."})
+                return
+            status, result = vessel_position_from_query(parse_qs(urlsplit(self.path).query, keep_blank_values=True))
+            self.reply(status, result)
+        elif path == "/api/route":
+            from route_service import route_from_query
+            try:
+                if len(self.path) > 512:
+                    raise ValueError('항로 요청이 너무 깁니다.')
+                result = route_from_query(parse_qs(urlsplit(self.path).query))
+                self.reply(200, result)
+            except (ValueError, TypeError, OverflowError) as exc:
+                self.reply(422, {"success": False, "error": str(exc)})
+            except RuntimeError as exc:
+                self.reply(503, {"success": False, "error": str(exc)})
+            except Exception:
+                self.reply(503, {"success": False, "error": "해상망 참고 항로를 계산하지 못했습니다. 잠시 후 다시 시도해주세요."})
+        elif path in ("/api/health", "/api/status"):
+            self.reply(200, {"success": True, "mode": "single_vessel_on_demand",
+                             "data_note": "Public vessel information is fetched only on an explicit search."})
         elif path == "/api/vessel-count":
             self.reply(200, {"success": True, "count": len(vessels)})
         elif path == "/vessels.json":
             with lock:
-                self.reply(200, vessels)
+                self.reply(200, [{"name": v["name"]} for v in vessels if v.get("name")])
         elif path.lstrip("/") in ASSETS | {""}:
             super().do_GET()
         else:
             self.send_error(404)
 
     def do_POST(self):
+        if urlsplit(self.path).path == "/api/add-vessel":
+            self.reply(410, {"error": "선박 등록 대신 검색창에서 한 척씩 조회하세요."})
+            return
         if urlsplit(self.path).path == "/api/relay":
             try:
                 length = int(self.headers.get("Content-Length", "0"))
@@ -290,10 +388,5 @@ class Handler(SimpleHTTPRequestHandler):
 
 
 if __name__ == "__main__":
-    with database() as db:
-        for (payload,) in db.execute("SELECT payload FROM vessels"):
-            record = json.loads(payload)
-            if not any(str(v.get("mmsi")) == record["mmsi"] for v in vessels):
-                vessels.append(record)
-    threading.Thread(target=lambda: asyncio.run(receive()), daemon=True).start()
+    # Single-vessel research is on demand. The relay remains an explicit separate service.
     ThreadingHTTPServer(("0.0.0.0", int(os.environ.get("PORT", "10000"))), Handler).serve_forever()
